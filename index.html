@@ -1,0 +1,117 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
+	<title>AudioTags</title>
+	<style>
+		:root {
+			font-family: system-ui;
+			font-variant-numeric: tabular-nums;
+			background-color: black;
+			color: #fed;
+		}
+		body { margin: 0; padding: 0; }
+		body > * { padding-inline: 0.5rem; }
+		header {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			gap: 0 1em;
+		}
+		header:has(> h1) {
+			border-block: 1px solid #444;
+		}
+		h1 {
+			margin-block: 0.5rem;
+			color: #ea5;
+		}
+		input[type="file"] {
+			font-size: 0;
+		}
+		::file-selector-button {
+			font-size: 1rem;
+		}
+		button {
+			height: fit-content;
+			font-size: inherit;
+		}
+		hgroup {
+			margin-block: 0.5rem;
+			color: #ec8;
+		}
+		hgroup > * { margin-block: 0; }
+		dl {
+			display: grid;
+			grid-template-columns: auto 1fr;
+			align-items: center;
+			gap: 0.25em;
+			margin: 0 0 1em 0;
+		}
+		dt {
+			padding: 0.25em 0;
+		}
+		dd {
+			padding: 0.25em 0.5em;
+			background-color: #2a3039;
+			border-radius: 0.25em;
+		}
+	</style>
+	<script type="module" defer>
+		import { getFlacMetadata } from './modules/flac.js';
+		const getInfo = async (file) => {
+			switch(file.type) {
+				case 'audio/flac':
+				case 'audio/x-flac':
+					return await getFlacMetadata(file);
+				default:
+					throw new Error('Unsupported filetype');
+			}
+		};
+		
+		const kvTemplate = document.querySelector('#kv');
+		const filenameElement = document.querySelector('#filename');
+		const audioinfoElement = document.querySelector('#audioinfo');
+		const tagsElement = document.querySelector('#tags');
+		
+		const fileInput = document.querySelector('input[type="file"]');
+		fileInput.addEventListener('change', async (event) => {
+			const file = event.target.files[0];
+			filenameElement.textContent = file.name;
+			
+			const info = await getInfo(file);
+			
+			audioinfoElement.textContent = `${info.bitDepth} bit, ${info.sampleRate / 1000} kHz`;
+			
+			tagsElement.replaceChildren();
+			for (const key in info.tags) {
+				const node = kvTemplate.content.cloneNode(true);
+				node.querySelector('dt').textContent = key;
+				node.querySelector('dd').textContent = info.tags[key];
+				tagsElement.appendChild(node);
+			}
+		});
+	</script>
+</head>
+<body>
+	<template id="kv">
+		<dt>KEY</dt><dd contenteditable="plaintext-only">Value</dd>
+	</template>
+	<header>
+		<h1>AudioTags</h1>
+		<input type="file" accept="audio/flac"></input>
+	</header>
+	<main>
+		<header>
+			<hgroup>
+				<h2 id="filename">filename</h2>
+				<p id="audioinfo">0 bit, 0 kHz</p>
+			</hgroup>
+			<button disabled>Save</button>
+		</header>
+		<dl id="tags">
+		</dl>
+		<button disabled>Add Tag</button>
+	</main>
+</body>
+</html>
